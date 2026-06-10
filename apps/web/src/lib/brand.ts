@@ -3,7 +3,7 @@ import type { Tables } from "@/lib/database.types";
 
 export type Brand = Tables<"brand_config">;
 
-const FALLBACK_NAME = process.env.NEXT_PUBLIC_BRAND_NAME ?? "Marsad";
+const FALLBACK_NAME = process.env.NEXT_PUBLIC_BRAND_NAME ?? "الشاهين";
 
 // Single source of truth for brand identity. DB row wins; env is the fallback.
 export async function getBrand(): Promise<Brand | null> {

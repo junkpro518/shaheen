@@ -35,3 +35,7 @@ coverage/
 # misc
 .turbo/
 .vercel/
+
+# local tooling / scratch
+.firecrawl/
+.claude/settings.local.json

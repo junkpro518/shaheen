@@ -8,7 +8,7 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
 });
 
-const brandName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "Marsad";
+const brandName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "الشاهين";
 
 export const metadata: Metadata = {
   title: brandName,

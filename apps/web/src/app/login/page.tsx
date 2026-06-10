@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const brandName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "Marsad";
+const brandName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "الشاهين";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

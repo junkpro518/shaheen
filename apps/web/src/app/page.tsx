@@ -4,7 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 
 export default async function Home() {
   const brand = await getBrand();
-  const name = brand?.name ?? process.env.NEXT_PUBLIC_BRAND_NAME ?? "Marsad";
+  const name = brand?.name ?? process.env.NEXT_PUBLIC_BRAND_NAME ?? "الشاهين";
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
