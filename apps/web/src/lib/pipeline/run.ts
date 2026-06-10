@@ -27,6 +27,32 @@ const clamp = (n: unknown) => Math.max(0, Math.min(100, Math.round(Number(n) || 
 const composite = (s: Scored, trust: number) =>
   clamp(s.importance) * 0.5 + clamp(s.novelty) * 0.3 + trust * 0.2 - clamp(s.risk) * 0.3;
 
+function titleTokens(t: string): Set<string> {
+  return new Set(
+    t
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+  );
+}
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (!a.size || !b.size) return 0;
+  let inter = 0;
+  for (const x of a) if (b.has(x)) inter++;
+  return inter / (a.size + b.size - inter);
+}
+// Drop near-duplicate headlines (same story from multiple feeds), keep higher trust.
+function dedupeByTitle(cands: Candidate[]): Candidate[] {
+  const kept: { c: Candidate; toks: Set<string> }[] = [];
+  for (const c of [...cands].sort((a, b) => b.trust - a.trust)) {
+    const toks = titleTokens(c.title);
+    if (kept.some((k) => jaccard(k.toks, toks) > 0.6)) continue;
+    kept.push({ c, toks });
+  }
+  return kept.map((k) => k.c);
+}
+
 export type BuildResult = {
   runId: string;
   draftId: string | null;
@@ -72,7 +98,7 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
     const { data: sources } = await supabase.from("sources").select("id, name, trust_score");
     const srcMap = new Map((sources ?? []).map((s) => [s.id, s]));
 
-    const candidates: Candidate[] = (raws ?? [])
+    const rawCandidates: Candidate[] = (raws ?? [])
       .filter((r) => !processedIds.has(r.id) && r.title)
       .slice(0, limit)
       .map((r) => {
@@ -88,6 +114,7 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
         };
       });
 
+    const candidates = dedupeByTitle(rawCandidates);
     if (candidates.length === 0) throw new Error("no unprocessed candidates");
 
     // 2. classify + score (batched)
@@ -137,14 +164,18 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
       .map((x) => ({ ...x, score: composite(x.s, x.c.trust) }))
       .sort((a, b) => b.score - a.score);
 
-    const phPicks = ranked.filter((x) => /product hunt/i.test(x.c.source_name)).slice(0, TOOLS_COUNT);
-    const phIds = new Set(phPicks.map((x) => x.c.id));
-    const nonPh = ranked.filter((x) => !phIds.has(x.c.id));
-    const main = nonPh[0];
-    const roundup = nonPh.slice(1, 1 + ROUNDUP_COUNT);
+    // tools = items the classifier flagged as launchable tools (fallback: Product Hunt)
+    let toolPicks = ranked.filter((x) => x.s.is_tool).slice(0, TOOLS_COUNT);
+    if (toolPicks.length === 0) {
+      toolPicks = ranked.filter((x) => /product hunt/i.test(x.c.source_name)).slice(0, TOOLS_COUNT);
+    }
+    const toolIds = new Set(toolPicks.map((x) => x.c.id));
+    const rest = ranked.filter((x) => !toolIds.has(x.c.id));
+    const main = rest[0];
+    const roundup = rest.slice(1, 1 + ROUNDUP_COUNT);
     if (!main) throw new Error("no main story candidate");
 
-    const selectedIds = [main.c.id, ...roundup.map((x) => x.c.id), ...phPicks.map((x) => x.c.id)];
+    const selectedIds = [main.c.id, ...roundup.map((x) => x.c.id), ...toolPicks.map((x) => x.c.id)];
     await supabase.from("processed_items").update({ selected: true }).in("raw_item_id", selectedIds);
 
     // 4. write main story
@@ -189,10 +220,10 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
 
     // tools blurbs
     let toolItems: ToolItem[] = [];
-    if (phPicks.length) {
+    if (toolPicks.length) {
       const tp = P.toolsPrompt(
         voice,
-        phPicks.map((x) => ({ id: x.c.id, title: x.c.title, summary: x.s.summary }))
+        toolPicks.map((x) => ({ id: x.c.id, title: x.c.title, summary: x.s.summary }))
       );
       const tOut = await chatJSON<{ items: { id: string; name: string; blurb: string }[] }>({
         task: "write",
@@ -200,7 +231,7 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
         user: tp.user,
       });
       const tm = new Map((tOut.items ?? []).map((i) => [i.id, i]));
-      toolItems = phPicks.map((x) => ({
+      toolItems = toolPicks.map((x) => ({
         news_id: x.c.id,
         source_url: x.c.url,
         name: tm.get(x.c.id)?.name ?? x.c.title,

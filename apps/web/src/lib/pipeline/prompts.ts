@@ -41,6 +41,7 @@ export function classifyScorePrompt(items: Candidate[]) {
 - importance (0-100): أهميته لرائد أعمال خليجي
 - novelty (0-100): مدى جِدّته وطرافته
 - risk (0-100): احتمال أن يكون مبالَغاً فيه أو غير موثوق أو إشاعة
+- is_tool (true/false): هل الخبر إطلاق أداة أو منتج جاهز للتجربة (وليس مجرد خبر/تحليل)؟
 - summary: جملة عربية واحدة تلخّص الخبر
 - reason: لماذا يهم (أو لا يهم) جمهورنا، بإيجاز
 
@@ -48,7 +49,7 @@ export function classifyScorePrompt(items: Candidate[]) {
 ${list}
 
 أعد بهذا الشكل بالضبط:
-{"items":[{"id":"...","category_slug":"ai","audience":["entrepreneurs"],"importance":70,"novelty":60,"risk":20,"summary":"...","reason":"..."}]}`;
+{"items":[{"id":"...","category_slug":"ai","audience":["entrepreneurs"],"importance":70,"novelty":60,"risk":20,"is_tool":false,"summary":"...","reason":"..."}]}`;
   return { system, user };
 }
 

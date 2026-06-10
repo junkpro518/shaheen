@@ -15,6 +15,7 @@ export type Scored = {
   importance: number;
   novelty: number;
   risk: number;
+  is_tool: boolean; // a launchable tool/product (-> عُدّة الشاهين)
   summary: string;
   reason: string;
 };
