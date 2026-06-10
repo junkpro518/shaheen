@@ -17,6 +17,8 @@ const CANDIDATE_LIMIT = 60;
 const BATCH = 6;
 const ROUNDUP_COUNT = 6;
 const TOOLS_COUNT = 3;
+const RELEVANCE_MIN = 40; // drop items weakly tied to AI-for-founders
+const MIN_SELECTABLE = 4; // if the gate leaves too few, relax it
 
 function chunk<T>(arr: T[], n: number): T[][] {
   const out: T[][] = [];
@@ -25,7 +27,11 @@ function chunk<T>(arr: T[], n: number): T[][] {
 }
 const clamp = (n: unknown) => Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
 const composite = (s: Scored, trust: number) =>
-  clamp(s.importance) * 0.5 + clamp(s.novelty) * 0.3 + trust * 0.2 - clamp(s.risk) * 0.3;
+  clamp(s.relevance) * 0.4 +
+  clamp(s.importance) * 0.35 +
+  clamp(s.novelty) * 0.15 +
+  trust * 0.1 -
+  clamp(s.risk) * 0.25;
 
 function titleTokens(t: string): Set<string> {
   return new Set(
@@ -152,7 +158,7 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
           novelty: clamp(s.novelty),
           risk: clamp(s.risk),
           source_trust: c.trust,
-          analysis: { reason: s.reason ?? "" } as Json,
+          analysis: { reason: s.reason ?? "", relevance: clamp(s.relevance) } as Json,
         };
       });
     if (procRows.length) await supabase.from("processed_items").insert(procRows);
@@ -164,13 +170,18 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
       .map((x) => ({ ...x, score: composite(x.s, x.c.trust) }))
       .sort((a, b) => b.score - a.score);
 
+    // relevance gate — keep only items meaningfully about AI-for-founders
+    const relevant = ranked.filter((x) => clamp(x.s.relevance) >= RELEVANCE_MIN);
+    const pool = relevant.length >= MIN_SELECTABLE ? relevant : ranked;
+    const dropped = ranked.length - pool.length;
+
     // tools = items the classifier flagged as launchable tools (fallback: Product Hunt)
-    let toolPicks = ranked.filter((x) => x.s.is_tool).slice(0, TOOLS_COUNT);
+    let toolPicks = pool.filter((x) => x.s.is_tool).slice(0, TOOLS_COUNT);
     if (toolPicks.length === 0) {
-      toolPicks = ranked.filter((x) => /product hunt/i.test(x.c.source_name)).slice(0, TOOLS_COUNT);
+      toolPicks = pool.filter((x) => /product hunt/i.test(x.c.source_name)).slice(0, TOOLS_COUNT);
     }
     const toolIds = new Set(toolPicks.map((x) => x.c.id));
-    const rest = ranked.filter((x) => !toolIds.has(x.c.id));
+    const rest = pool.filter((x) => !toolIds.has(x.c.id));
     const main = rest[0];
     const roundup = rest.slice(1, 1 + ROUNDUP_COUNT);
     if (!main) throw new Error("no main story candidate");
@@ -287,7 +298,13 @@ export async function buildDailyIssue(opts?: { candidateLimit?: number }): Promi
       .update({
         status: "completed",
         finished_at: new Date().toISOString(),
-        state: { candidates: candidates.length, scored: scored.length, draft_id: draft?.id } as Json,
+        state: {
+          candidates: candidates.length,
+          scored: scored.length,
+          relevant_pool: pool.length,
+          relevance_dropped: dropped,
+          draft_id: draft?.id,
+        } as Json,
       })
       .eq("id", runId);
 

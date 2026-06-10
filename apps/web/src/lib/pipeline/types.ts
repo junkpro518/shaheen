@@ -12,12 +12,13 @@ export type Scored = {
   id: string;
   category_slug: string | null;
   audience: string[];
+  relevance: number; // AI ↔ entrepreneur-buildable relevance (the core filter)
   importance: number;
   novelty: number;
   risk: number;
   is_tool: boolean; // a launchable tool/product (-> عُدّة الشاهين)
   summary: string;
-  reason: string;
+  reason: string; // how a founder could act on it
 };
 
 export type MainStory = {
