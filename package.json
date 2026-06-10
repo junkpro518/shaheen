@@ -1,8 +1,8 @@
 {
-  "name": "marsad",
+  "name": "shaheen",
   "version": "0.0.0",
   "private": true,
-  "description": "محرك نشرة ومدونة ذكية عربية — Marsad (temporary name, change via BRAND_NAME)",
+  "description": "الشاهين — نشرة الذكاء الاصطناعي لروّاد الأعمال (engine + admin + blog)",
   "packageManager": "pnpm@10.19.0",
   "engines": {
     "node": ">=20"

@@ -7,7 +7,7 @@ import type { TablesInsert } from "@/lib/database.types";
 const parser = new Parser({
   timeout: 15000,
   headers: {
-    "User-Agent": "MarsadBot/0.1 (+https://github.com/junkpro518/Marsad)",
+    "User-Agent": "ShaheenBot/0.1 (+https://github.com/junkpro518/shaheen)",
   },
 });
 
