@@ -64,5 +64,5 @@ Bias toward caution over speed; for trivial tasks, use judgment.
 8. **Instruction sync: CLAUDE.md ↔ AGENTS.md** — keep both aligned on core rules (overview, architecture, spec-first workflow, commands, security, style, deployment, prohibited actions). When editing one, update shared rules in the other.
 
 <!-- SPECKIT START -->
-For additional context about technologies, project structure, shell commands, and other important information, read the current plan.
+**New session? Start with `docs/HANDOFF.md`** — current state, what's built, what's left, and the Spec Kit workflow to continue. For additional context about technologies, project structure, and commands, read the current plan.
 <!-- SPECKIT END -->
