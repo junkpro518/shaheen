@@ -6,7 +6,10 @@ import "./globals.css";
 // Thmanyah Sans — the project's adopted typeface (local woff2).
 const arabic = localFont({
   variable: "--font-arabic",
-  display: "swap",
+  // "block" (not "swap"): hold text invisibly for the brief local-font load, then
+  // paint in Thmanyah — never flash a system fallback (brand fidelity). Local woff2
+  // loads in ~40ms so the block period is imperceptible.
+  display: "block",
   src: [
     { path: "../fonts/thmanyah/thmanyahsans-Light.woff2", weight: "300", style: "normal" },
     { path: "../fonts/thmanyah/thmanyahsans-Regular.woff2", weight: "400", style: "normal" },

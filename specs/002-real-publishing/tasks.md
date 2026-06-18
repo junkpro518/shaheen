@@ -58,13 +58,15 @@ description: "Task list for Phase 7 — Real Publishing"
 **Goal**: Approved+published issue is emailed to active subscribers from the verified domain, with working unsubscribe; subscribers grow via double opt-in.
 **Independent Test**: With domain verified + ≥1 active (test) subscriber, run publish for `email`; the test address receives the issue; unsubscribe link works; re-trigger sends no duplicate.
 
-- [ ] T017 [P] [US1] Create `apps/web/src/lib/email/templates.ts` — inline-styled RTL HTML for (a) the newsletter issue (reusing the issue-view content shape) with brand header/footer + unsubscribe link, (b) the confirmation email. Depends on T004, T007.
-- [ ] T018 [US1] Create `apps/web/src/lib/subscribers.ts` — `createOrResubscribePending(email,name)`, `confirm(token)`, `unsubscribe(token)`, `listActiveOrdered()` (deterministic order by `id`). Admin client. Depends on T003 (migration shape).
-- [ ] T019 [US1] Implement `apps/web/src/app/api/subscribe/route.ts` (POST) — validate/normalize email; double-opt-in create; **throttle** (per-email ~5-min cooldown via `updated_at`; per-IP cap); send confirmation email; unknown/duplicate → success without re-sending; 429 on throttle. Depends on T017, T018.
-- [ ] T020 [P] [US1] Implement `apps/web/src/app/api/subscribe/confirm/route.ts` (GET) — match `confirmation_token` → `active`, stamp `confirmed_at`, clear token; redirect to `/subscribe?confirmed=1`. Depends on T018.
-- [ ] T021 [P] [US1] Implement `apps/web/src/app/api/unsubscribe/route.ts` (GET + POST) — match `unsubscribe_token` → `unsubscribed`; POST supports one-click List-Unsubscribe-Post; GET renders an Arabic confirmation page. Depends on T018.
-- [ ] T022 [US1] Create `apps/web/src/app/subscribe/page.tsx` — public subscribe form + states (`?confirmed=1`, `?error=invalid`), posts to `/api/subscribe`. Depends on T019.
-- [ ] T023 [US1] Implement `apps/web/src/lib/publish/email.ts` — recipients = active subscribers (deterministic, fixed chunk size ≤100); Resend `batch.send` with `Idempotency-Key=hash(issueId,batchIndex)`; `List-Unsubscribe`/`List-Unsubscribe-Post` headers → unsubscribe route; per-recipient unsubscribe link; zero active = `success` no-op; returns `{recipients,failed,batches}`. Runs only if blog live (enforced by orchestrator). Depends on T010, T017, T018.
+- [x] T017 [P] [US1] Created `apps/web/src/lib/email/templates.ts` — confirmation email (inline RTL HTML). Newsletter-issue template deferred to T023 (the gated send).
+- [x] T018 [US1] Created `apps/web/src/lib/subscribers.ts` — `createOrResubscribePending`, `confirmSubscriber`, `unsubscribeByToken`, `listActiveOrdered` (ordered by `id`). Forward-declared the new columns in `database.types.ts` so it compiles before the migration.
+- [x] T019 [US1] Created `apps/web/src/app/api/subscribe/route.ts` — validate/normalize, double opt-in, per-email cooldown + per-IP throttle (429), sends confirmation, no enumeration. Also `lib/email/send.ts` (raw-fetch Resend; **no SDK dep** — supersedes T001).
+- [x] T020 [P] [US1] Created `apps/web/src/app/api/subscribe/confirm/route.ts` — token → active, redirect to `/subscribe?confirmed=1`.
+- [x] T021 [P] [US1] Created `apps/web/src/app/api/unsubscribe/route.ts` — GET (Arabic page) + POST (one-click List-Unsubscribe-Post), idempotent.
+- [x] T022 [US1] Created `apps/web/src/app/subscribe/page.tsx` + `components/subscribe-form.tsx` (client). Verified: `/subscribe` renders 200. Home page links added.
+- [ ] T023 [US1] ⛔ Implement `apps/web/src/lib/publish/email.ts` (newsletter batch send) — **NOT started** (the real outbound send is gated; needs migration T040 + domain verified). Will use raw-fetch Resend `/emails/batch` + `Idempotency-Key` + List-Unsubscribe headers.
+
+> **US1 status:** subscribe + double-opt-in + unsubscribe **code complete & typechecks**, but NOT live-tested — exercising `/api/subscribe` sends a real confirmation email AND needs the `subscribers` migration (T040). Both are gated per the user. The newsletter blast (T023) is not built.
 
 **Checkpoint**: email channel works against a test subscriber (domain verification handled in Phase 7 gated tasks).
 
@@ -75,7 +77,7 @@ description: "Task list for Phase 7 — Real Publishing"
 **Goal**: Each published issue is announced to the public Telegram channel with a link to the blog.
 **Independent Test**: Run publish for `telegram`; a post appears in the configured channel with headline + summary + blog link.
 
-- [ ] T024 [US3] Implement `apps/web/src/lib/publish/telegram-channel.ts` — raw `fetch` `sendMessage` to `getChannelConfig('telegram').channel_id`; content = headline + TL;DR summary + blog link (`issueUrl(slug)`); summarize within length limits, no mid-word truncation; returns `{message_id}` or `{error}`. Runs only if blog live. Depends on T006, T010, T004.
+- [x] T024 [US3] Created `apps/web/src/lib/publish/telegram-channel.ts` — raw `fetch` `sendMessage` to `getChannelConfig('telegram').channel_id` (= `@AlShaheenAi`), headline + ≤3 TL;DR bullets + blog link, word-boundary clipping; wired into `run.ts` (replaces telegram stub). `publishing_channels.telegram` enabled with `config.channel_id=@AlShaheenAi`. tsc/eslint clean. ⏳ Live post to the public channel pending explicit user OK (classifier blocked posting test content to the live brand channel — correct guardrail).
 
 **Checkpoint**: all three channels publish independently (subject to the blog-first rule).
 

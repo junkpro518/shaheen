@@ -13,7 +13,10 @@ export default async function Home() {
         <p className="max-w-xl text-lg text-muted-foreground">{brand.tagline}</p>
       )}
       <div className="flex gap-3">
-        <Link href="/issues" className={buttonVariants()}>
+        <Link href="/subscribe" className={buttonVariants()}>
+          اشترك
+        </Link>
+        <Link href="/issues" className={buttonVariants({ variant: "outline" })}>
           كل الأعداد
         </Link>
         <Link href="/admin" className={buttonVariants({ variant: "outline" })}>

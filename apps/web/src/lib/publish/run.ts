@@ -4,6 +4,7 @@ import { getEnabledChannels } from "@/lib/channels";
 import type { Json, Tables } from "@/lib/database.types";
 import { CHANNEL_ORDER, type ChannelName, type ChannelResult, type ChannelResults } from "@/lib/publish/types";
 import { publishBlog } from "@/lib/publish/blog";
+import { publishTelegramChannel } from "@/lib/publish/telegram-channel";
 
 export type PublishOptions = {
   channels?: string[]; // default: all channels
@@ -72,9 +73,10 @@ async function runChannel(channel: ChannelName, issue: Tables<"published_issues"
   switch (channel) {
     case "blog":
       return publishBlog(issue);
-    case "email":
     case "telegram":
-      // Implemented in Phase 4 (email) / Phase 5 (telegram). Until then, no-op.
-      return { status: "skipped", at: new Date().toISOString(), summary: { reason: "channel not implemented yet" } };
+      return publishTelegramChannel(issue);
+    case "email":
+      // Newsletter send (real outbound) is gated — implemented in the email increment.
+      return { status: "skipped", at: new Date().toISOString(), summary: { reason: "email channel not implemented yet" } };
   }
 }

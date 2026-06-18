@@ -127,9 +127,9 @@ export type Database = {
         Relationships: []
       }
       subscribers: {
-        Row: { confirmed_at: string | null; created_at: string; email: string; id: string; name: string | null; source: string | null; status: string; updated_at: string }
-        Insert: { confirmed_at?: string | null; created_at?: string; email: string; id?: string; name?: string | null; source?: string | null; status?: string; updated_at?: string }
-        Update: { confirmed_at?: string | null; created_at?: string; email?: string; id?: string; name?: string | null; source?: string | null; status?: string; updated_at?: string }
+        Row: { confirmation_token: string | null; confirmed_at: string | null; created_at: string; email: string; id: string; name: string | null; source: string | null; status: string; unsubscribe_token: string | null; updated_at: string }
+        Insert: { confirmation_token?: string | null; confirmed_at?: string | null; created_at?: string; email: string; id?: string; name?: string | null; source?: string | null; status?: string; unsubscribe_token?: string | null; updated_at?: string }
+        Update: { confirmation_token?: string | null; confirmed_at?: string | null; created_at?: string; email?: string; id?: string; name?: string | null; source?: string | null; status?: string; unsubscribe_token?: string | null; updated_at?: string }
         Relationships: []
       }
     }
