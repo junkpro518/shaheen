@@ -1,41 +1,27 @@
-# Al-Shaheen — VPS deployment (Phase 10).
-# Run from this dir on the server:  docker compose up -d --build
-#
-# Secrets live ONLY in infra/.env on the server (gitignored, NEVER committed).
-# Compose auto-loads infra/.env for ${...} build-arg interpolation AND uses it as the
-# app's runtime env_file. Create it from .env.example + the NEXT_PUBLIC_* values.
-
 services:
   app:
     build:
-      # Context is the REPO ROOT (pnpm workspace lockfile lives there).
       context: ..
       dockerfile: apps/web/Dockerfile
       args:
-        # PUBLIC values, inlined at build time (not secrets):
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_BRAND_NAME: ${NEXT_PUBLIC_BRAND_NAME}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     env_file:
-      - .env # infra/.env on the server — runtime secrets (service_role, OpenRouter, Telegram, Resend, INGEST_SECRET, …)
-    expose:
-      - "3000" # internal only; reached via Caddy, not published to the host
+      - .env
+    networks:
+      - proxy
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.shaheen.rule=Host(`alshaheenai.com`)"
+      - "traefik.http.routers.shaheen.entrypoints=websecure"
+      - "traefik.http.routers.shaheen.tls.certresolver=myresolver"
+      - "traefik.http.routers.shaheen.service=shaheen"
+      - "traefik.http.services.shaheen.loadbalancer.server.port=3000"
 
-  caddy:
-    image: caddy:2
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - app
-    restart: unless-stopped
-
-volumes:
-  caddy_data:
-  caddy_config:
+networks:
+  proxy:
+    external: true

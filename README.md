@@ -11,7 +11,7 @@
 apps/web/            Next.js 16 — لوحة التحكم + المدونة العامة (RTL/عربي)
 services/            (لاحقاً) pipeline (LangGraph) · bot (Telegram) · publisher
 supabase/migrations/ مخطط قاعدة البيانات
-infra/               (لاحقاً) Docker Compose · Caddy — للنشر على VPS
+infra/               Docker Compose (خلف Traefik) — للنشر على VPS
 ```
 
 ## التشغيل محلياً

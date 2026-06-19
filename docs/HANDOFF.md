@@ -37,13 +37,13 @@
 
 ## المتبقّي
 - **متبقّي من Phase 7:** `T023` — **النشرة الجماعية** (`lib/publish/email.ts`: إرسال دفعات Resend لكل المشتركين الفعّالين + List-Unsubscribe + idempotency). **لم تُبنَ بعد، وموقوفة (gated)** حتى إذن صريح.
-- **Phase 10 — النشر على VPS: ملفات النشر جاهزة ✅** (Contabo، `109.199.111.27`, Ubuntu 24.04). أُنشئت ولم تُشغَّل بعد (البناء على السيرفر):
+- **Phase 10 — النشر على VPS: ملفات النشر جاهزة ✅** (السيرفر `13.140.187.42` **AWS** — يستبدل Contabo القديم `109.199.111.27`). **النشر خلف Traefik الموجود مسبقاً على السيرفر** (يتولّى HTTPS عبر Let's Encrypt). DNS مضبوط: `@` و`www` → `13.140.187.42` (DNS-only/سحابة رمادية — لازم لتحدّي ACME). أُنشئت الملفات ولم تُشغَّل بعد (البناء على السيرفر):
   - `apps/web/next.config.ts` → `output:"standalone"` (+ `outputFileTracingRoot` للـ monorepo).
   - `apps/web/Dockerfile` متعدد المراحل (deps→build→runner `node:22-slim`) + `.dockerignore` (الجذر). **سياق البناء = جذر الريبو** (لازم للـ pnpm workspace lockfile)؛ compose يبني بـ `context: ..` و`dockerfile: apps/web/Dockerfile`. الـ `NEXT_PUBLIC_*` (عامة، ليست أسراراً) تُمرَّر كـ build args.
-  - `infra/docker-compose.yml`: خدمتا `app` (expose 3000 داخلياً) + `caddy` (80/443). **الأسرار في `infra/.env` على السيرفر فقط (gitignored)** — يستعمله compose للـ build args وللـ runtime env_file.
-  - `infra/Caddyfile`: `alshaheenai.com → reverse_proxy app:3000` (HTTPS تلقائي) + `www` يحوّل للجذر. **يتطلب DNS-only (سحابة Cloudflare رمادية)** ليُكمل Caddy تحدّي ACME.
+  - `infra/docker-compose.yml`: خدمة `app` فقط، على شبكة **`proxy` الخارجية** مع **labels لـ Traefik** (router `shaheen`، `entrypoints=websecure`، `tls.certresolver=myresolver`، `loadbalancer.server.port=3000`). لا منافذ منشورة ولا خدمة caddy. **الأسرار في `infra/.env` على السيرفر فقط (gitignored)** — يستعمله compose للـ build args وللـ runtime env_file.
+  - **Traefik** (موجود مسبقاً على السيرفر) يتولّى الـ routing وHTTPS عبر Let's Encrypt (`certresolver=myresolver`). **لا Caddy/Caddyfile** (أُزيل). الشرط: شبكة `proxy` موجودة وTraefik شغّال، وDNS يشير للسيرفر.
   - `infra/crontab.example`: مهام بتوقيت الرياض (CRON_TZ) — جمع 23:00 · بناء 00:00 · مراجعة 00:30 · نشر 03:00 — تقرأ `INGEST_SECRET` من `infra/.env` وقت التنفيذ (لا أسرار في الملف).
-  - **خطوات النشر على السيرفر:** انسخ الريبو → أنشئ `infra/.env` (من `.env.example` + قيم `NEXT_PUBLIC_*`) → `cd infra && docker compose up -d --build` → ثبّت Caddy DNS-only → `crontab infra/crontab.example` (بعد ضبط المسار) → نسخ احتياطي.
+  - **خطوات النشر على السيرفر:** انسخ الريبو → أنشئ `infra/.env` (من `.env.example` + قيم `NEXT_PUBLIC_*`) → تأكّد أن شبكة `proxy` موجودة وTraefik شغّال → `cd infra && docker compose up -d --build` → Traefik يلتقط الـ labels ويصدر الشهادة تلقائياً → `crontab infra/crontab.example` (بعد ضبط المسار) → نسخ احتياطي.
 - **بقية المراحل:** 4) الهدايا (غنيمة اليوم) · 6) صور nano-banana (عبر OpenRouter) · 8) الموجز الأسبوعي · 9) التحليلات + روابط تقييم القرّاء + ربط Sentry.
 - **مؤجّلات المحرك:** dedup دلالي · عقدة تحقّق · مصدر The Neuron · X (مؤجّلة — تحتاج طبقة API مدفوعة ~$100+/شهر).
 
